@@ -1,0 +1,26 @@
+# Global ignores
+.DS_Store
+node_modules/
+.env
+*.log
+
+# ASP.NET
+aspnet-api/bin/
+aspnet-api/obj/
+aspnet-api/.vs/
+aspnet-api/*.user
+aspnet-api/*.suo
+
+# Node.js
+node-api/node_modules/
+node-api/dist/
+node-api/.env
+
+# Results and scripts
+results/
+scripts/*.log
+*.pid
+
+# OS crap
+Thumbs.db
+ehthumbs.db
