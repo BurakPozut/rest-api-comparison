@@ -10,11 +10,13 @@ aspnet-api/obj/
 aspnet-api/.vs/
 aspnet-api/*.user
 aspnet-api/*.suo
+aspnet-api/appsettings.json
 
 # Node.js
 node-api/node_modules/
 node-api/dist/
 node-api/.env
+node-api/package-lock.json
 
 # Results and scripts
 results/
@@ -24,3 +26,5 @@ scripts/*.log
 # OS crap
 Thumbs.db
 ehthumbs.db
+
+northwind.sql
