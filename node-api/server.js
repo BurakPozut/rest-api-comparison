@@ -1,7 +1,7 @@
 const fastify = require('fastify')({ logger: false });
 const { Pool } = require('pg');
 const dotenv = require('dotenv');
-dotenv.config({ path: require('path').resolve(__dirname, '../.env') });
+dotenv.config();
 
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
@@ -63,9 +63,6 @@ fastify.get('/api/customers', async (req, reply) => {
 // - API responsiveness under frequent inserts
 fastify.post('/api/orders', async (request, reply) => {
   const { customer_id, total } = request.body;
-
-  console.log('Received order');
-  console.log(`Received order: ${customer_id} ${total}`);
 
   const sql = 'INSERT INTO test_orders (customer_id, total) VALUES ($1, $2)';
   const result = await pool.query(sql, [customer_id, total]);
@@ -149,8 +146,7 @@ fastify.get('/api/simulated-delay', async (request, reply) => {
 // - API’s performance reading and serializing large files
 fastify.get('/api/file-read', async (request, reply) => {
   const fs = require('fs/promises');
-  const path = require('path');
-  const filePath = path.join(__dirname, '..', 'sample-data', 'large.json');
+  const filePath = '/app/sample-data/large.json';
 
   try {
     const content = await fs.readFile(filePath, 'utf-8');

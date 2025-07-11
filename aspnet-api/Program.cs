@@ -70,9 +70,6 @@ app.MapGet("/api/customers", async () =>
 // - API responsiveness under frequent inserts
 app.MapPost("/api/orders", async (OrderInput input, NpgsqlConnection conn) =>
 {
-    Console.WriteLine("Received order");
-    Console.WriteLine($"Received order: {input.customer_id} {input.total}");
-
     var sql = @"INSERT INTO test_orders (customer_id, total)
             VALUES (@CustomerId, @Total)";
 
@@ -161,12 +158,12 @@ app.MapGet("/api/simulated-delay", async () =>
 // - API’s performance reading and serializing large files
 app.MapGet("/api/file-read", async () =>
 {
-    var path = Path.Combine(Directory.GetParent(Directory.GetCurrentDirectory())!.FullName, "sample-data", "large.json");
+    var filePath = Path.Combine(AppContext.BaseDirectory, "sample-data", "large.json");
 
-    if (!System.IO.File.Exists(path))
+    if (!System.IO.File.Exists(filePath))
         return Results.NotFound("File not found");
 
-    var json = await System.IO.File.ReadAllTextAsync(path);
+    var json = await System.IO.File.ReadAllTextAsync(filePath);
     return Results.Text(json, "application/json");
 });
 
