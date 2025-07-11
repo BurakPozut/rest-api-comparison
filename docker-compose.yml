@@ -1,0 +1,54 @@
+version: '3.8'
+
+services:
+  # PostgreSQL Database
+  postgres:
+    image: postgres:17
+    ports:
+      - "55432:${POSTGRES_PORT}"
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/seed:/docker-entrypoint-initdb.d
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # ASP.NET Core API
+  aspnet-api:
+    build:
+      context: ./aspnet-api
+      dockerfile: Dockerfile
+    ports:
+      - "${ASPNET_PORT}:${ASPNET_PORT}"
+    environment:
+      ConnectionStrings__DefaultConnection: "Host=postgres;Port=${POSTGRES_PORT};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB}"
+
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./sample-data:/app/sample-data:ro
+
+  # Node.js API
+  node-api:
+    build:
+      context: ./node-api
+      dockerfile: Dockerfile
+    ports:
+      - "${NODE_PORT}:${NODE_PORT}"
+    environment:
+      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    volumes:
+      - ./sample-data:/app/sample-data:ro
+
+volumes:
+  postgres_data: 
