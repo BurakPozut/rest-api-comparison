@@ -2,6 +2,7 @@
 .DS_Store
 node_modules/
 .env
+.env.docker
 *.log
 
 # ASP.NET
@@ -31,3 +32,7 @@ northwind.sql
 
 sample-data/
 docker/seed/output.sql
+
+/aspnet-api/appsettings.json
+/aspnet-api/appsettings.Development.json
+/aspnet-api/appsettings.Docker.json

@@ -7,6 +7,7 @@ services:
     ports:
       - "55432:${POSTGRES_PORT}"
     environment:
+      NODE_ENV: docker
       POSTGRES_DB: ${POSTGRES_DB}
       POSTGRES_USER: ${POSTGRES_USER}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
@@ -27,28 +28,31 @@ services:
     ports:
       - "${ASPNET_PORT}:${ASPNET_PORT}"
     environment:
-      ConnectionStrings__DefaultConnection: "Host=postgres;Port=${POSTGRES_PORT};Username=${POSTGRES_USER};Password=${POSTGRES_PASSWORD};Database=${POSTGRES_DB}"
-
+      NODE_ENV: docker
+      ASPNETCORE_ENVIRONMENT: Docker
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./sample-data:/app/sample-data:ro
+      - ./sample-data:/app/sample-data
 
   # Node.js API
   node-api:
     build:
       context: ./node-api
       dockerfile: Dockerfile
+    env_file:
+      - .env.docker
     ports:
       - "${NODE_PORT}:${NODE_PORT}"
     environment:
-      DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
+      NODE_ENV: docker
+    # DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
     depends_on:
       postgres:
         condition: service_healthy
     volumes:
-      - ./sample-data:/app/sample-data:ro
+      - ./sample-data:/app/sample-data
 
 volumes:
   postgres_data: 
