@@ -30,3 +30,4 @@ ehthumbs.db
 northwind.sql
 
 sample-data/
+docker/seed/output.sql

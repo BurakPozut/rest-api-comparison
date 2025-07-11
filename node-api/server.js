@@ -1,12 +1,14 @@
 const fastify = require('fastify')({ logger: false });
 const { Pool } = require('pg');
+const dotenv = require('dotenv');
+dotenv.config({ path: require('path').resolve(__dirname, '../.env') });
 
 const pool = new Pool({
-  user: 'postgres',
-  host: 'localhost',
-  database: 'northwind',
-  password: '989258456',
-  port: 5432,
+  user: process.env.POSTGRES_USER,
+  host: process.env.POSTGRES_HOST,
+  database: process.env.POSTGRES_DB,
+  password: process.env.POSTGRES_PASSWORD,
+  port: process.env.POSTGRES_PORT,
 });
 
 // GET /api/data

@@ -11,6 +11,7 @@ string connStr = builder.Configuration.GetConnectionString("Postgres") ?? throw 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<NpgsqlConnection>(provider => new NpgsqlConnection(connStr));
+builder.WebHost.UseUrls("http://0.0.0.0:5050");
 
 var app = builder.Build();
 
