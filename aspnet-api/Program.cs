@@ -8,6 +8,9 @@ var builder = WebApplication.CreateBuilder(args);
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 string connStr = builder.Configuration.GetConnectionString("Postgres") ?? throw new InvalidOperationException("Postgres connection string not found in configuration");
 
+builder.Services.AddSingleton(sp =>
+    new NpgsqlDataSourceBuilder(connStr).Build());
+
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<NpgsqlConnection>(provider => new NpgsqlConnection(connStr));
@@ -54,9 +57,9 @@ app.MapGet("/api/cpu", () =>
 // - Simple SELECT latency
 // - DB driver performance
 // - JSON serialization for small result sets
-app.MapGet("/api/customers", async () =>
+app.MapGet("/api/customers", async (NpgsqlDataSource dataSource) =>
 {
-    using var conn = new NpgsqlConnection(connStr);
+    await using var conn = await dataSource.OpenConnectionAsync();
     var customers = await conn.QueryAsync("SELECT customer_id, company_name FROM customers LIMIT 10");
     return Results.Json(customers);
 });
@@ -68,8 +71,9 @@ app.MapGet("/api/customers", async () =>
 // - Database write performance
 // - Driver-level efficiency (Dapper vs pg)
 // - API responsiveness under frequent inserts
-app.MapPost("/api/orders", async (OrderInput input, NpgsqlConnection conn) =>
+app.MapPost("/api/orders", async (OrderInput input, NpgsqlDataSource dataSource) =>
 {
+    await using var conn = await dataSource.OpenConnectionAsync();
     var sql = @"INSERT INTO test_orders (customer_id, total)
             VALUES (@CustomerId, @Total)";
 
@@ -89,8 +93,9 @@ app.MapPost("/api/orders", async (OrderInput input, NpgsqlConnection conn) =>
 // - SQL JOIN performance
 // - Data mapping from flat DB result to structured JSON
 // - API server’s ability to shape and serialize joined data
-app.MapGet("/api/orders/with-customer", async (NpgsqlConnection conn) =>
+app.MapGet("/api/orders/with-customer", async (NpgsqlDataSource dataSource) =>
 {
+    await using var conn = await dataSource.OpenConnectionAsync();
     var sql = @"
         SELECT o.id AS order_id, o.customer_id AS customer_id, c.company_name AS company_name, o.total AS total
         FROM test_orders o
@@ -108,8 +113,9 @@ app.MapGet("/api/orders/with-customer", async (NpgsqlConnection conn) =>
 // - Memory consumption under large payloads
 // - JSON serialization performance
 // - Throughput under high load
-app.MapGet("/api/orders/bulk", async (NpgsqlConnection conn) =>
+app.MapGet("/api/orders/bulk", async (NpgsqlDataSource dataSource) =>
 {
+    await using var conn = await dataSource.OpenConnectionAsync();
     var sql = @"
         SELECT id AS order_id, customer_id AS customer_id, order_date AS order_date, total AS total
         FROM test_orders
@@ -127,8 +133,9 @@ app.MapGet("/api/orders/bulk", async (NpgsqlConnection conn) =>
 // - SQL aggregate query performance
 // - JSON serialization of scalar values
 // - Low-memory, high-frequency endpoint efficiency
-app.MapGet("/api/stats", async (NpgsqlConnection conn) =>
+app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
 {
+    await using var conn = await dataSource.OpenConnectionAsync();
     var sql = @"
         SELECT COUNT(*) AS total_orders, 
                COALESCE(AVG(total), 0) AS avg_total
