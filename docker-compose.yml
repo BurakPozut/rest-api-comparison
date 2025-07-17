@@ -2,6 +2,7 @@ services:
   # PostgreSQL Database
   postgres:
     image: postgres:17
+    platform: linux/amd64
     ports:
       - "55432:${POSTGRES_PORT}"
     environment:
@@ -20,11 +21,12 @@ services:
 
   # ASP.NET Core API
   aspnet-api:
+    platform: linux/amd64
     build:
       context: ./aspnet-api
       dockerfile: Dockerfile
     ports:
-      - "${ASPNET_PORT}:${ASPNET_PORT}"
+      - "127.0.0.1:${ASPNET_PORT}:${ASPNET_PORT}"
     environment:
       NODE_ENV: docker
       ASPNETCORE_ENVIRONMENT: Docker
@@ -36,15 +38,16 @@ services:
 
   # Node.js API
   node-api:
+    platform: linux/amd64
     build:
       context: ./node-api
       dockerfile: Dockerfile
-    env_file:
-      - .env.docker
     ports:
-      - "${NODE_PORT}:${NODE_PORT}"
+      - "127.0.0.1:${NODE_PORT}:${NODE_PORT}"
     environment:
       NODE_ENV: docker
+    env_file:
+      - .env
     # DATABASE_URL: "postgresql://${POSTGRES_USER}:${POSTGRES_PASSWORD}@postgres:${POSTGRES_PORT}/${POSTGRES_DB}"
     depends_on:
       postgres:

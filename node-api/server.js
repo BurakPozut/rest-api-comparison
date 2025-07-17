@@ -135,17 +135,19 @@ fastify.get('/api/simulated-delay', async (request, reply) => {
 
 // GET /api/file-read
 //
-// Purpose: Reads a local file from disk and returns its contents.
+// Purpose: Streams a local file from disk and returns its contents.
 // Measures:
 // - File system access latency
-// - API’s performance reading and serializing large files
+// - API's performance streaming large files
+// - Memory efficiency for large files
 fastify.get('/api/file-read', async (request, reply) => {
-  const fs = require('fs/promises');
-  const filePath = '/app/sample-data/large.json';
+  const fs = require('fs');
+  const filePath = '/app/sample-data/large.json'; // ✅ ABSOLUTE path inside container
 
   try {
-    const content = await fs.readFile(filePath, 'utf-8');
-    reply.header('Content-Type', 'application/json').send(content);
+    const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+    reply.header('Content-Type', 'application/json');
+    reply.send(stream);
   } catch (err) {
     reply.code(404).send({ error: 'File not found' });
   }
@@ -153,8 +155,8 @@ fastify.get('/api/file-read', async (request, reply) => {
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3000, host: '0.0.0.0' });
-    console.log('🚀 Fastify listening on port 3000');
+    await fastify.listen({ port: 3002, host: '0.0.0.0' });
+    console.log('🚀 Fastify listening on port 3002');
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);

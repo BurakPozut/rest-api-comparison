@@ -6,6 +6,13 @@ const { Pool } = require('pg');
 const dotenv = require('dotenv');
 dotenv.config();
 
+// console.log(process.env.POSTGRES_USER);
+// console.log(process.env.POSTGRES_HOST);
+// console.log(process.env.POSTGRES_DB);
+// console.log(process.env.POSTGRES_PASSWORD);
+// console.log(process.env.POSTGRES_PORT);
+// console.log(process.env.POSTGRES_POOL_MAX);
+
 const pool = new Pool({
   user: process.env.POSTGRES_USER,
   host: process.env.POSTGRES_HOST,

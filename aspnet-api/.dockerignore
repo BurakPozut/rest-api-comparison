@@ -360,3 +360,7 @@ FodyWeavers.xsd
 
 # JetBrains Rider
 *.sln.iml 
+
+postgres.tar
+rest-api-comparison-aspnet-api.tar
+rest-api-comparison-node-api.tar
