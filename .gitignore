@@ -36,3 +36,10 @@ docker/seed/output.sql
 /aspnet-api/appsettings.json
 /aspnet-api/appsettings.Development.json
 /aspnet-api/appsettings.Docker.json
+
+postgres.tar
+rest-api-comparison-aspnet-api.tar
+rest-api-comparison-node-api.tar
+rest-api-comparison.tar
+
+visuals/

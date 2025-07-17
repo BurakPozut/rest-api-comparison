@@ -163,15 +163,14 @@ app.MapGet("/api/simulated-delay", async () =>
 // Measures:
 // - File system access latency
 // - API’s performance reading and serializing large files
-app.MapGet("/api/file-read", async () =>
+app.MapGet("/api/file-read", () =>
 {
-    var filePath = Path.Combine(AppContext.BaseDirectory, "sample-data", "large.json");
-
+    var filePath = "/app/sample-data/large.json";
     if (!System.IO.File.Exists(filePath))
         return Results.NotFound("File not found");
 
-    var json = await System.IO.File.ReadAllTextAsync(filePath);
-    return Results.Text(json, "application/json");
+    var stream = System.IO.File.OpenRead(filePath);
+    return Results.Stream(stream, "application/json");
 });
 
 app.Run();
