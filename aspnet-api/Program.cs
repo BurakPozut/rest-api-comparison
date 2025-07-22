@@ -173,9 +173,34 @@ app.MapGet("/api/file-read", () =>
     return Results.Stream(stream, "application/json");
 });
 
+// POST /api/login
+//
+// Purpose: Authenticates a user based on email and password.
+// Measures:
+// - I/O latency for querying user data from the database
+// - CPU-bound password hash verification using bcrypt
+// - Realistic simulation of login flow for benchmarking authentication endpoints
+app.MapPost("/api/login", async (LoginRequest request, NpgsqlDataSource dataSource) =>
+{
+    await using var conn = await dataSource.OpenConnectionAsync();
+
+    var result = await conn.QueryFirstOrDefaultAsync(
+    "SELECT password_hash FROM users WHERE email = @Email",
+    new { Email = request.Email });
+
+    if (result == null || !BCrypt.Net.BCrypt.Verify(request.Password, result.password_hash))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(new { message = "Login successful", token = "dummy.jwt.token" });
+});
+
 app.Run();
 
 record StatsResult(long total_orders, decimal avg_total);
 record OrderRecord(int order_id, string customer_id, DateTime order_date, decimal total);
 record OrderWithCustomer(int order_id, string customer_id, string company_name, decimal total);
 record OrderInput(string customer_id, decimal total);
+record LoginRequest(string Email, string Password);
+record User(int Id, string Email, string PasswordHash);

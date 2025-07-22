@@ -153,6 +153,33 @@ fastify.get('/api/file-read', async (request, reply) => {
   }
 });
 
+// POST /api/login
+//
+// Purpose: Authenticates a user based on email and password.
+// Measures:
+// - I/O latency for querying user data from the database
+// - CPU-bound password hash verification using bcrypt
+// - Realistic simulation of login flow for benchmarking authentication endpoints
+fastify.post('/api/login', async (request, reply) => {
+  const { email, password } = request.body;
+
+  const bcrypt = require('bcrypt');
+  console.log(email, password);
+  try {
+    const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const user = rows[0];
+
+    if (!user || !(await bcrypt.compare(password, user.password_hash))) {
+      return reply.code(401).send({ error: 'Invalid credentials' });
+    }
+
+    // Simulate JWT/token creation
+    return reply.send({ message: 'Login successful', token: 'dummy.jwt.token' });
+  } catch (err) {
+    return reply.code(500).send({ error: err.message });
+  }
+});
+
 const start = async () => {
   try {
     await fastify.listen({ port: 3002, host: '0.0.0.0' });
