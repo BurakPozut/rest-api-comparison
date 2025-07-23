@@ -1,9 +1,13 @@
 using Npgsql;
 using Dapper;
 using System.Text.Json;
+using Microsoft.Extensions.Hosting.WindowsServices;
 
-var builder = WebApplication.CreateBuilder(args);
-
+var builder = WebApplication.CreateBuilder(new WebApplicationOptions
+{
+    Args = args,
+    ContentRootPath = AppContext.BaseDirectory, // Required for Windows service
+});
 // Add services to the container.
 // Learn more about configuring Swagger/OpenAPI at https://aka.ms/aspnetcore/swashbuckle
 string connStr = builder.Configuration.GetConnectionString("Postgres") ?? throw new InvalidOperationException("Postgres connection string not found in configuration");
@@ -14,7 +18,10 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<NpgsqlConnection>(provider => new NpgsqlConnection(connStr));
-builder.WebHost.UseUrls("http://0.0.0.0:5050");
+builder.WebHost.UseUrls("http://127.0.0.1:5050");
+
+builder.Host.UseWindowsService(); // 👈 This makes it run as a Windows Service
+
 
 var app = builder.Build();
 
@@ -172,6 +179,7 @@ app.MapGet("/api/file-read", () =>
     var stream = System.IO.File.OpenRead(filePath);
     return Results.Stream(stream, "application/json");
 });
+
 
 app.Run();
 

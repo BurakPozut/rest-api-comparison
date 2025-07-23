@@ -12,6 +12,7 @@ aspnet-api/.vs/
 aspnet-api/*.user
 aspnet-api/*.suo
 aspnet-api/appsettings.json
+aspnet/publish
 
 # Node.js
 node-api/node_modules/
