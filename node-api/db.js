@@ -4,7 +4,7 @@ const path = require('path');
 const envPath = path.resolve(__dirname, '..', '.env');
 // console.log(envPath);
 const dotenv = require('dotenv');
-dotenv.config({path:envPath});
+dotenv.config({ path: envPath });
 
 // console.log(process.env.POSTGRES_USER);
 // console.log(process.env.POSTGRES_HOST);
