@@ -155,7 +155,7 @@ fastify.get('/api/file-read', async (request, reply) => {
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3002, host: '0.0.0.0' });
+    await fastify.listen({ port: 3002, host: '127.0.0.1' });
     console.log('🚀 Fastify listening on port 3002');
   } catch (err) {
     fastify.log.error(err);

@@ -1,10 +1,10 @@
 const { Pool } = require('pg');
 // get the .env from the parent directory
-// const path = require('path');
-// const envPath = path.resolve(__dirname, '..', '.env');
+const path = require('path');
+const envPath = path.resolve(__dirname, '..', '.env');
 // console.log(envPath);
 const dotenv = require('dotenv');
-dotenv.config();
+dotenv.config({path:envPath});
 
 // console.log(process.env.POSTGRES_USER);
 // console.log(process.env.POSTGRES_HOST);
