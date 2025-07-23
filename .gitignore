@@ -4,6 +4,7 @@ node_modules/
 .env
 .env.docker
 *.log
+package-lock.json
 
 # ASP.NET
 aspnet-api/bin/
@@ -43,3 +44,5 @@ rest-api-comparison-node-api.tar
 rest-api-comparison.tar
 
 visuals/
+
+node-asp-tmp/

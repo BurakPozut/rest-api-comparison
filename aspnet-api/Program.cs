@@ -14,7 +14,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<NpgsqlConnection>(provider => new NpgsqlConnection(connStr));
-builder.WebHost.UseUrls("http://0.0.0.0:5050");
+builder.WebHost.UseUrls("http://127.0.0.1:5050");
 
 var app = builder.Build();
 
@@ -64,6 +64,24 @@ app.MapGet("/api/customers", async (NpgsqlDataSource dataSource) =>
     return Results.Json(customers);
 });
 
+// GET /api/customers?take=50
+//
+// Purpose: Returns N customers from the database.
+// Measures:
+// - Query execution time for varying sizes
+// - JSON serialization performance
+// - Memory usage as N grows
+app.MapGet("/api/customers/take/{count:int}", async (int count, NpgsqlDataSource dataSource) =>
+{
+    if (count <= 0 || count > 10000) // Safety guard
+        return Results.BadRequest("Parameter 'take' must be between 1 and 10,000");
+
+    await using var conn = await dataSource.OpenConnectionAsync();
+    var customers = await conn.QueryAsync(@"SELECT customer_id, company_name FROM customers LIMIT @Count", new { Count = count });
+
+    return Results.Ok(customers);
+});
+
 // POST /api/orders
 //
 // Purpose: Write-intensive endpoint to insert order records.
@@ -93,18 +111,18 @@ app.MapPost("/api/orders", async (OrderInput input, NpgsqlDataSource dataSource)
 // - SQL JOIN performance
 // - Data mapping from flat DB result to structured JSON
 // - API server’s ability to shape and serialize joined data
-app.MapGet("/api/orders/with-customer", async (NpgsqlDataSource dataSource) =>
-{
-    await using var conn = await dataSource.OpenConnectionAsync();
-    var sql = @"
-        SELECT o.id AS order_id, o.customer_id AS customer_id, c.company_name AS company_name, o.total AS total
-        FROM test_orders o
-        JOIN customers c ON o.customer_id = c.customer_id
-        LIMIT 50";
+// app.MapGet("/api/orders/with-customer", async (NpgsqlDataSource dataSource) =>
+// {
+//     await using var conn = await dataSource.OpenConnectionAsync();
+//     var sql = @"
+//         SELECT o.id AS order_id, o.customer_id AS customer_id, c.company_name AS company_name, o.total AS total
+//         FROM test_orders o
+//         JOIN customers c ON o.customer_id = c.customer_id
+//         LIMIT 50";
 
-    var results = await conn.QueryAsync<OrderWithCustomer>(sql);
-    return Results.Ok(results);
-});
+//     var results = await conn.QueryAsync<OrderWithCustomer>(sql);
+//     return Results.Ok(results);
+// });
 
 // GET /api/orders/bulk
 //
@@ -133,17 +151,17 @@ app.MapGet("/api/orders/bulk", async (NpgsqlDataSource dataSource) =>
 // - SQL aggregate query performance
 // - JSON serialization of scalar values
 // - Low-memory, high-frequency endpoint efficiency
-app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
-{
-    await using var conn = await dataSource.OpenConnectionAsync();
-    var sql = @"
-        SELECT COUNT(*) AS total_orders, 
-               COALESCE(AVG(total), 0) AS avg_total
-        FROM test_orders";
+// app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
+// {
+//     await using var conn = await dataSource.OpenConnectionAsync();
+//     var sql = @"
+//         SELECT COUNT(*) AS total_orders, 
+//                COALESCE(AVG(total), 0) AS avg_total
+//         FROM test_orders";
 
-    var result = await conn.QueryFirstAsync<StatsResult>(sql);
-    return Results.Ok(result);
-});
+//     var result = await conn.QueryFirstAsync<StatsResult>(sql);
+//     return Results.Ok(result);
+// });
 
 // GET /api/simulated-delay
 //
@@ -151,11 +169,11 @@ app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
 // Measures:
 // - Ability to scale under non-blocking workloads
 // - Thread pool and request scheduling efficiency
-app.MapGet("/api/simulated-delay", async () =>
-{
-    await Task.Delay(200);
-    return Results.Json(new { message = "Delayed response", delay = "200ms" });
-});
+// app.MapGet("/api/simulated-delay", async () =>
+// {
+//     await Task.Delay(200);
+//     return Results.Json(new { message = "Delayed response", delay = "200ms" });
+// });
 
 // GET /api/file-read
 //
@@ -165,12 +183,70 @@ app.MapGet("/api/simulated-delay", async () =>
 // - API’s performance reading and serializing large files
 app.MapGet("/api/file-read", () =>
 {
-    var filePath = "/app/sample-data/large.json";
+    // var filePath = "/app/sample-data/large.json";
+    var filePath = "../sample-data/large.json";
     if (!System.IO.File.Exists(filePath))
         return Results.NotFound("File not found");
 
     var stream = System.IO.File.OpenRead(filePath);
     return Results.Stream(stream, "application/json");
+});
+
+// POST /api/login
+//
+// Purpose: Authenticates a user based on email and password.
+// Measures:
+// - I/O latency for querying user data from the database
+// - CPU-bound password hash verification using bcrypt
+// - Realistic simulation of login flow for benchmarking authentication endpoints
+app.MapPost("/api/login", async (LoginRequest request, NpgsqlDataSource dataSource) =>
+{
+    await using var conn = await dataSource.OpenConnectionAsync();
+
+    var result = await conn.QueryFirstOrDefaultAsync(
+    "SELECT password_hash FROM users WHERE email = @Email",
+    new { Email = request.Email });
+
+    if (result == null || !BCrypt.Net.BCrypt.Verify(request.Password, result.password_hash))
+    {
+        return Results.Unauthorized();
+    }
+
+    return Results.Ok(new { message = "Login successful", token = "dummy.jwt.token" });
+});
+
+// POST /api/upload
+//
+// Purpose: Simulates file upload by accepting a multipart/form-data file.
+// Measures:
+// - Multipart parsing performance
+// - I/O performance for buffering/parsing file uploads
+// - End-to-end latency for typical file transfer payloads (e.g., 250KB)
+app.MapPost("/api/upload", async (HttpRequest request) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart/form-data");
+
+    var form = await request.ReadFormAsync();
+    var file = form.Files.GetFile("file");
+
+    if (file == null)
+        return Results.BadRequest("No file uploaded");
+
+    // Generate a unique filename
+    var uniqueSuffix = $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid().ToString()[..6]}";
+    var safeFileName = $"{uniqueSuffix}-{file.FileName}";
+
+    var currentDir = Directory.GetCurrentDirectory(); // asp-api/
+    var tempPath = Path.Combine(currentDir, "../node-asp-tmp", safeFileName);
+    var fullPath = Path.GetFullPath(tempPath); // normalize path
+
+    using (var stream = new FileStream(fullPath, FileMode.Create))
+    {
+        await file.CopyToAsync(stream);
+    }
+
+    return Results.Ok(new { file.FileName, file.Length, savedTo = safeFileName });
 });
 
 app.Run();
@@ -179,3 +255,5 @@ record StatsResult(long total_orders, decimal avg_total);
 record OrderRecord(int order_id, string customer_id, DateTime order_date, decimal total);
 record OrderWithCustomer(int order_id, string customer_id, string company_name, decimal total);
 record OrderInput(string customer_id, decimal total);
+record LoginRequest(string Email, string Password);
+record User(int Id, string Email, string PasswordHash);
