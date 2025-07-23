@@ -14,7 +14,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<NpgsqlConnection>(provider => new NpgsqlConnection(connStr));
-builder.WebHost.UseUrls("http://0.0.0.0:5050");
+builder.WebHost.UseUrls("http://127.0.0.1:5050");
 
 var app = builder.Build();
 
@@ -62,6 +62,24 @@ app.MapGet("/api/customers", async (NpgsqlDataSource dataSource) =>
     await using var conn = await dataSource.OpenConnectionAsync();
     var customers = await conn.QueryAsync("SELECT customer_id, company_name FROM customers LIMIT 10");
     return Results.Json(customers);
+});
+
+// GET /api/customers?take=50
+//
+// Purpose: Returns N customers from the database.
+// Measures:
+// - Query execution time for varying sizes
+// - JSON serialization performance
+// - Memory usage as N grows
+app.MapGet("/api/customers/take/{count:int}", async (int count, NpgsqlDataSource dataSource) =>
+{
+    if (count <= 0 || count > 10000) // Safety guard
+        return Results.BadRequest("Parameter 'take' must be between 1 and 10,000");
+
+    await using var conn = await dataSource.OpenConnectionAsync();
+    var customers = await conn.QueryAsync(@"SELECT customer_id, company_name FROM customers LIMIT @Count", new { Count = count });
+
+    return Results.Ok(customers);
 });
 
 // POST /api/orders
@@ -194,6 +212,27 @@ app.MapPost("/api/login", async (LoginRequest request, NpgsqlDataSource dataSour
     }
 
     return Results.Ok(new { message = "Login successful", token = "dummy.jwt.token" });
+});
+
+// POST /api/upload
+//
+// Purpose: Simulates file upload by accepting a multipart/form-data file.
+// Measures:
+// - Multipart parsing performance
+// - I/O performance for buffering/parsing file uploads
+// - End-to-end latency for typical file transfer payloads (e.g., 250KB)
+app.MapPost("/api/upload", async (HttpRequest request) =>
+{
+    if (!request.HasFormContentType)
+        return Results.BadRequest("Expected multipart/form-data");
+
+    var form = await request.ReadFormAsync();
+    var file = form.Files.GetFile("file");
+
+    if (file == null)
+        return Results.BadRequest("No file uploaded");
+
+    return Results.Ok(new { file.FileName, file.Length });
 });
 
 app.Run();
