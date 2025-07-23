@@ -4,6 +4,8 @@ const fastify = require('fastify')({ logger: false });
 // dotenv.config();
 
 const pool = require('./db'); // path to db.js
+fastify.register(require('@fastify/multipart'));
+
 
 
 // GET /api/data
@@ -12,12 +14,12 @@ const pool = require('./db'); // path to db.js
 // Measures:
 // - Minimal processing latency
 // - HTTP response speed without DB or CPU cost
-fastify.get('/api/data', async (request, reply) => {
-  return {
-    message: 'Node.js + Fastify response',
-    timestamp: new Date().toISOString()
-  };
-});
+// fastify.get('/api/data', async (request, reply) => {
+//   return {
+//     message: 'Node.js + Fastify response',
+//     timestamp: new Date().toISOString()
+//   };
+// });
 
 // GET /api/cpu
 //
@@ -47,6 +49,25 @@ fastify.get('/api/cpu', async (request, reply) => {
 fastify.get('/api/customers', async (req, reply) => {
   const { rows } = await pool.query('SELECT customer_id, company_name FROM customers LIMIT 10');
   return rows;
+});
+
+// GET /api/customers/take/:count
+fastify.get('/api/customers/take/:count', async (request, reply) => {
+  const count = parseInt(request.params.count, 10);
+
+  if (isNaN(count) || count <= 0 || count > 10000) {
+    return reply.status(400).send({ error: 'Count must be between 1 and 10,000' });
+  }
+
+  try {
+    const { rows } = await pool.query(
+      'SELECT customer_id, company_name FROM customers LIMIT $1',
+      [count]
+    );
+    return reply.send(rows);
+  } catch (err) {
+    return reply.code(500).send({ error: err.message });
+  }
 });
 
 // POST /api/orders
@@ -180,9 +201,30 @@ fastify.post('/api/login', async (request, reply) => {
   }
 });
 
+// POST /api/upload
+//
+// Purpose: Simulates a typical file upload with 250KB input
+// Measures:
+// - Parsing performance of multipart/form-data
+// - Memory throughput for uploaded files
+fastify.post('/api/upload', async function (request, reply) {
+  const parts = request.parts();
+  for await (const part of parts) {
+    if (part.file) {
+      const chunks = [];
+      for await (const chunk of part.file) {
+        chunks.push(chunk);
+      }
+      const buffer = Buffer.concat(chunks);
+      return reply.send({ message: 'File uploaded successfully', size: buffer.length });
+    }
+  }
+  reply.code(400).send({ error: 'No file uploaded' });
+});
+
 const start = async () => {
   try {
-    await fastify.listen({ port: 3002, host: '0.0.0.0' });
+    await fastify.listen({ port: 3002, host: '127.0.0.1' });
     console.log('🚀 Fastify listening on port 3002');
   } catch (err) {
     fastify.log.error(err);
