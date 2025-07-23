@@ -94,17 +94,17 @@ fastify.post('/api/orders', async (request, reply) => {
 // - SQL JOIN performance
 // - Data mapping from flat DB result to structured JSON
 // - API server’s ability to shape and serialize joined data
-fastify.get('/api/orders/with-customer', async (request, reply) => {
-  const sql = `
-    SELECT o.id AS order_id, o.customer_id, c.company_name, o.total
-    FROM test_orders o
-    JOIN customers c ON o.customer_id = c.customer_id
-    LIMIT 50
-  `;
+// fastify.get('/api/orders/with-customer', async (request, reply) => {
+//   const sql = `
+//     SELECT o.id AS order_id, o.customer_id, c.company_name, o.total
+//     FROM test_orders o
+//     JOIN customers c ON o.customer_id = c.customer_id
+//     LIMIT 50
+//   `;
 
-  const { rows } = await pool.query(sql);
-  return rows;
-});
+//   const { rows } = await pool.query(sql);
+//   return rows;
+// });
 
 // GET /api/orders/bulk
 //
@@ -132,16 +132,16 @@ fastify.get('/api/orders/bulk', async (request, reply) => {
 // - SQL aggregate query performance
 // - JSON serialization of scalar values
 // - Low-memory, high-frequency endpoint efficiency
-fastify.get('/api/stats', async (request, reply) => {
-  const sql = `
-    SELECT COUNT(*) AS total_orders,
-           COALESCE(AVG(total), 0) AS avg_total
-    FROM test_orders
-  `;
+// fastify.get('/api/stats', async (request, reply) => {
+//   const sql = `
+//     SELECT COUNT(*) AS total_orders,
+//            COALESCE(AVG(total), 0) AS avg_total
+//     FROM test_orders
+//   `;
 
-  const { rows } = await pool.query(sql);
-  return rows[0]; // return scalar values as JSON
-});
+//   const { rows } = await pool.query(sql);
+//   return rows[0]; // return scalar values as JSON
+// });
 
 // GET /api/simulated-delay
 //
@@ -149,10 +149,10 @@ fastify.get('/api/stats', async (request, reply) => {
 // Measures:
 // - Ability to scale under non-blocking workloads
 // - Event loop and timer queue performance under high load
-fastify.get('/api/simulated-delay', async (request, reply) => {
-  await new Promise(resolve => setTimeout(resolve, 200));
-  return { message: 'Delayed response', delay: '200ms' };
-});
+// fastify.get('/api/simulated-delay', async (request, reply) => {
+//   await new Promise(resolve => setTimeout(resolve, 200));
+//   return { message: 'Delayed response', delay: '200ms' };
+// });
 
 // GET /api/file-read
 //
@@ -163,14 +163,30 @@ fastify.get('/api/simulated-delay', async (request, reply) => {
 // - Memory efficiency for large files
 fastify.get('/api/file-read', async (request, reply) => {
   const fs = require('fs');
-  const filePath = '/app/sample-data/large.json'; // ✅ ABSOLUTE path inside container
+  const path = require('path');
+  // const filePath = '/app/sample-data/large.json'; // ✅ ABSOLUTE path inside container
+
+
+  // Use absolute path from the project root
+  const filePath = path.join(__dirname, '..', 'sample-data', 'large.json');
 
   try {
-    const stream = fs.createReadStream(filePath, { encoding: 'utf-8' });
+    // Check if file exists first
+    if (!fs.existsSync(filePath)) {
+      return reply.code(404).send({ error: 'File not found', path: filePath });
+    }
+
+    // Read file content and send as JSON
+    const fileContent = fs.readFileSync(filePath, 'utf-8');
     reply.header('Content-Type', 'application/json');
-    reply.send(stream);
+    return reply.send({
+      message: 'File read successfully',
+      content: JSON.parse(fileContent),
+      size: fileContent.length
+    });
   } catch (err) {
-    reply.code(404).send({ error: 'File not found' });
+    console.error('File read error:', err);
+    return reply.code(500).send({ error: err.message, path: filePath });
   }
 });
 
@@ -185,7 +201,6 @@ fastify.post('/api/login', async (request, reply) => {
   const { email, password } = request.body;
 
   const bcrypt = require('bcrypt');
-  console.log(email, password);
   try {
     const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
     const user = rows[0];
@@ -208,17 +223,27 @@ fastify.post('/api/login', async (request, reply) => {
 // - Parsing performance of multipart/form-data
 // - Memory throughput for uploaded files
 fastify.post('/api/upload', async function (request, reply) {
+  const path = require('path');
+  const fs = require('fs');
+  const { pipeline } = require('stream/promises');
+
   const parts = request.parts();
+
   for await (const part of parts) {
     if (part.file) {
-      const chunks = [];
-      for await (const chunk of part.file) {
-        chunks.push(chunk);
-      }
-      const buffer = Buffer.concat(chunks);
-      return reply.send({ message: 'File uploaded successfully', size: buffer.length });
+      // Resolve path relative to node-api folder
+      const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const safeName = `${uniqueSuffix}-${part.filename}`;
+      const tempPath = path.resolve(__dirname, '../node-asp-tmp', safeName);
+      const writeStream = fs.createWriteStream(tempPath);
+
+      await pipeline(part.file, writeStream);
+
+      const stats = fs.statSync(tempPath);
+      return reply.send({ message: 'File uploaded and saved', size: stats.size, path: safeName });
     }
   }
+
   reply.code(400).send({ error: 'No file uploaded' });
 });
 
