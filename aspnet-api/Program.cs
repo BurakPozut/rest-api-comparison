@@ -111,18 +111,18 @@ app.MapPost("/api/orders", async (OrderInput input, NpgsqlDataSource dataSource)
 // - SQL JOIN performance
 // - Data mapping from flat DB result to structured JSON
 // - API server’s ability to shape and serialize joined data
-app.MapGet("/api/orders/with-customer", async (NpgsqlDataSource dataSource) =>
-{
-    await using var conn = await dataSource.OpenConnectionAsync();
-    var sql = @"
-        SELECT o.id AS order_id, o.customer_id AS customer_id, c.company_name AS company_name, o.total AS total
-        FROM test_orders o
-        JOIN customers c ON o.customer_id = c.customer_id
-        LIMIT 50";
+// app.MapGet("/api/orders/with-customer", async (NpgsqlDataSource dataSource) =>
+// {
+//     await using var conn = await dataSource.OpenConnectionAsync();
+//     var sql = @"
+//         SELECT o.id AS order_id, o.customer_id AS customer_id, c.company_name AS company_name, o.total AS total
+//         FROM test_orders o
+//         JOIN customers c ON o.customer_id = c.customer_id
+//         LIMIT 50";
 
-    var results = await conn.QueryAsync<OrderWithCustomer>(sql);
-    return Results.Ok(results);
-});
+//     var results = await conn.QueryAsync<OrderWithCustomer>(sql);
+//     return Results.Ok(results);
+// });
 
 // GET /api/orders/bulk
 //
@@ -151,17 +151,17 @@ app.MapGet("/api/orders/bulk", async (NpgsqlDataSource dataSource) =>
 // - SQL aggregate query performance
 // - JSON serialization of scalar values
 // - Low-memory, high-frequency endpoint efficiency
-app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
-{
-    await using var conn = await dataSource.OpenConnectionAsync();
-    var sql = @"
-        SELECT COUNT(*) AS total_orders, 
-               COALESCE(AVG(total), 0) AS avg_total
-        FROM test_orders";
+// app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
+// {
+//     await using var conn = await dataSource.OpenConnectionAsync();
+//     var sql = @"
+//         SELECT COUNT(*) AS total_orders, 
+//                COALESCE(AVG(total), 0) AS avg_total
+//         FROM test_orders";
 
-    var result = await conn.QueryFirstAsync<StatsResult>(sql);
-    return Results.Ok(result);
-});
+//     var result = await conn.QueryFirstAsync<StatsResult>(sql);
+//     return Results.Ok(result);
+// });
 
 // GET /api/simulated-delay
 //
@@ -169,11 +169,11 @@ app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
 // Measures:
 // - Ability to scale under non-blocking workloads
 // - Thread pool and request scheduling efficiency
-app.MapGet("/api/simulated-delay", async () =>
-{
-    await Task.Delay(200);
-    return Results.Json(new { message = "Delayed response", delay = "200ms" });
-});
+// app.MapGet("/api/simulated-delay", async () =>
+// {
+//     await Task.Delay(200);
+//     return Results.Json(new { message = "Delayed response", delay = "200ms" });
+// });
 
 // GET /api/file-read
 //
@@ -183,7 +183,8 @@ app.MapGet("/api/simulated-delay", async () =>
 // - API’s performance reading and serializing large files
 app.MapGet("/api/file-read", () =>
 {
-    var filePath = "/app/sample-data/large.json";
+    // var filePath = "/app/sample-data/large.json";
+    var filePath = "../sample-data/large.json";
     if (!System.IO.File.Exists(filePath))
         return Results.NotFound("File not found");
 
@@ -232,7 +233,20 @@ app.MapPost("/api/upload", async (HttpRequest request) =>
     if (file == null)
         return Results.BadRequest("No file uploaded");
 
-    return Results.Ok(new { file.FileName, file.Length });
+    // Generate a unique filename
+    var uniqueSuffix = $"{DateTimeOffset.UtcNow.ToUnixTimeMilliseconds()}-{Guid.NewGuid().ToString()[..6]}";
+    var safeFileName = $"{uniqueSuffix}-{file.FileName}";
+
+    var currentDir = Directory.GetCurrentDirectory(); // asp-api/
+    var tempPath = Path.Combine(currentDir, "../node-asp-tmp", safeFileName);
+    var fullPath = Path.GetFullPath(tempPath); // normalize path
+
+    using (var stream = new FileStream(fullPath, FileMode.Create))
+    {
+        await file.CopyToAsync(stream);
+    }
+
+    return Results.Ok(new { file.FileName, file.Length, savedTo = safeFileName });
 });
 
 app.Run();
