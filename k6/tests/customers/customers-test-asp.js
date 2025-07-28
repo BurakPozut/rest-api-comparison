@@ -14,8 +14,8 @@ export let options = {
 };
 
 export default function () {
-  const res = http.get('http://localhost:3002/api/customers', {
-    tags: { endpoint: 'customers', platform: 'nodejs' }
+  const res = http.get('http://localhost:5050/api/customers', {
+    tags: { endpoint: 'customers', platform: 'aspnet' }
   });
 
   check(res, {

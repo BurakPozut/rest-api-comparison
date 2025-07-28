@@ -14,7 +14,7 @@ builder.Services.AddSingleton(sp =>
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddScoped<NpgsqlConnection>(provider => new NpgsqlConnection(connStr));
-builder.WebHost.UseUrls("http://127.0.0.1:5050");
+builder.WebHost.UseUrls("http://0.0.0.0:5050");
 
 var app = builder.Build();
 
@@ -71,16 +71,16 @@ app.MapGet("/api/customers", async (NpgsqlDataSource dataSource) =>
 // - Query execution time for varying sizes
 // - JSON serialization performance
 // - Memory usage as N grows
-app.MapGet("/api/customers/take/{count:int}", async (int count, NpgsqlDataSource dataSource) =>
-{
-    if (count <= 0 || count > 10000) // Safety guard
-        return Results.BadRequest("Parameter 'take' must be between 1 and 10,000");
+// app.MapGet("/api/customers/take/{count:int}", async (int count, NpgsqlDataSource dataSource) =>
+// {
+//     if (count <= 0 || count > 10000) // Safety guard
+//         return Results.BadRequest("Parameter 'take' must be between 1 and 10,000");
 
-    await using var conn = await dataSource.OpenConnectionAsync();
-    var customers = await conn.QueryAsync(@"SELECT customer_id, company_name FROM customers LIMIT @Count", new { Count = count });
+//     await using var conn = await dataSource.OpenConnectionAsync();
+//     var customers = await conn.QueryAsync(@"SELECT customer_id, company_name FROM customers LIMIT @Count", new { Count = count });
 
-    return Results.Ok(customers);
-});
+//     return Results.Ok(customers);
+// });
 
 // POST /api/orders
 //
@@ -183,8 +183,8 @@ app.MapGet("/api/orders/bulk", async (NpgsqlDataSource dataSource) =>
 // - API’s performance reading and serializing large files
 app.MapGet("/api/file-read", () =>
 {
-    // var filePath = "/app/sample-data/large.json";
-    var filePath = "../sample-data/large.json";
+    var filePath = "/app/sample-data/large.json";
+    // var filePath = "../sample-data/large.json";
     if (!System.IO.File.Exists(filePath))
         return Results.NotFound("File not found");
 
@@ -238,7 +238,8 @@ app.MapPost("/api/upload", async (HttpRequest request) =>
     var safeFileName = $"{uniqueSuffix}-{file.FileName}";
 
     var currentDir = Directory.GetCurrentDirectory(); // asp-api/
-    var tempPath = Path.Combine(currentDir, "../node-asp-tmp", safeFileName);
+    // var tempPath = Path.Combine(currentDir, "../node-asp-tmp", safeFileName);
+    var tempPath = Path.Combine("/app/node-asp-tmp", safeFileName);
     var fullPath = Path.GetFullPath(tempPath); // normalize path
 
     using (var stream = new FileStream(fullPath, FileMode.Create))

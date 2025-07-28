@@ -35,6 +35,7 @@ services:
         condition: service_healthy
     volumes:
       - ./sample-data:/app/sample-data
+      - ./node-asp-tmp:/app/node-asp-tmp
 
   # Node.js API
   node-api:
@@ -54,6 +55,7 @@ services:
         condition: service_healthy
     volumes:
       - ./sample-data:/app/sample-data
+      - ./node-asp-tmp:/app/node-asp-tmp
 
 volumes:
   postgres_data: 

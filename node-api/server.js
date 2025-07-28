@@ -52,23 +52,23 @@ fastify.get('/api/customers', async (req, reply) => {
 });
 
 // GET /api/customers/take/:count
-fastify.get('/api/customers/take/:count', async (request, reply) => {
-  const count = parseInt(request.params.count, 10);
+// fastify.get('/api/customers/take/:count', async (request, reply) => {
+//   const count = parseInt(request.params.count, 10);
 
-  if (isNaN(count) || count <= 0 || count > 10000) {
-    return reply.status(400).send({ error: 'Count must be between 1 and 10,000' });
-  }
+//   if (isNaN(count) || count <= 0 || count > 10000) {
+//     return reply.status(400).send({ error: 'Count must be between 1 and 10,000' });
+//   }
 
-  try {
-    const { rows } = await pool.query(
-      'SELECT customer_id, company_name FROM customers LIMIT $1',
-      [count]
-    );
-    return reply.send(rows);
-  } catch (err) {
-    return reply.code(500).send({ error: err.message });
-  }
-});
+//   try {
+//     const { rows } = await pool.query(
+//       'SELECT customer_id, company_name FROM customers LIMIT $1',
+//       [count]
+//     );
+//     return reply.send(rows);
+//   } catch (err) {
+//     return reply.code(500).send({ error: err.message });
+//   }
+// });
 
 // POST /api/orders
 //
@@ -164,11 +164,11 @@ fastify.get('/api/orders/bulk', async (request, reply) => {
 fastify.get('/api/file-read', async (request, reply) => {
   const fs = require('fs');
   const path = require('path');
-  // const filePath = '/app/sample-data/large.json'; // ✅ ABSOLUTE path inside container
+  const filePath = '/app/sample-data/large.json'; // ✅ ABSOLUTE path inside container
 
 
   // Use absolute path from the project root
-  const filePath = path.join(__dirname, '..', 'sample-data', 'large.json');
+  // const filePath = path.join(__dirname, '..', 'sample-data', 'large.json');
 
   try {
     // Check if file exists first
@@ -234,7 +234,8 @@ fastify.post('/api/upload', async function (request, reply) {
       // Resolve path relative to node-api folder
       const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
       const safeName = `${uniqueSuffix}-${part.filename}`;
-      const tempPath = path.resolve(__dirname, '../node-asp-tmp', safeName);
+      // const tempPath = path.resolve(__dirname, '../node-asp-tmp', safeName);
+      const tempPath = path.resolve('/app/node-asp-tmp', safeName);
       const writeStream = fs.createWriteStream(tempPath);
 
       await pipeline(part.file, writeStream);
@@ -249,7 +250,7 @@ fastify.post('/api/upload', async function (request, reply) {
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3002, host: '127.0.0.1' });
+    await fastify.listen({ port: 3002, host: '0.0.0.0' });
     console.log('🚀 Fastify listening on port 3002');
   } catch (err) {
     fastify.log.error(err);
