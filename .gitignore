@@ -25,6 +25,7 @@ node-api/package-lock.json
 scripts/*.log
 *.pid
 *.csv
+*.sln
 
 # OS crap
 Thumbs.db

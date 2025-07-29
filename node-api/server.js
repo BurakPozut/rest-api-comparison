@@ -1,25 +1,7 @@
-const fastify = require('fastify')({ logger: false });
-// const { Pool } = require('pg');
-// const dotenv = require('dotenv');
-// dotenv.config();
+const fastify = require("fastify")({ logger: false });
 
-const pool = require('./db'); // path to db.js
-fastify.register(require('@fastify/multipart'));
-
-
-
-// GET /api/data
-//
-// Purpose: Control endpoint to test minimal response overhead.
-// Measures:
-// - Minimal processing latency
-// - HTTP response speed without DB or CPU cost
-// fastify.get('/api/data', async (request, reply) => {
-//   return {
-//     message: 'Node.js + Fastify response',
-//     timestamp: new Date().toISOString()
-//   };
-// });
+const pool = require("./db"); // path to db.js
+fastify.register(require("@fastify/multipart"));
 
 // GET /api/cpu
 //
@@ -27,7 +9,7 @@ fastify.register(require('@fastify/multipart'));
 // Measures:
 // - Pure CPU load on the API server
 // - Thread/event loop blocking behavior under stress
-fastify.get('/api/cpu', async (request, reply) => {
+fastify.get("/api/cpu", async (request, reply) => {
   function fib(n) {
     return n <= 1 ? n : fib(n - 1) + fib(n - 2);
   }
@@ -35,7 +17,7 @@ fastify.get('/api/cpu', async (request, reply) => {
 
   return {
     fib: result,
-    timestamp: new Date().toISOString()
+    timestamp: new Date().toISOString(),
   };
 });
 
@@ -46,29 +28,12 @@ fastify.get('/api/cpu', async (request, reply) => {
 // - Simple SELECT latency
 // - DB driver performance
 // - JSON serialization for small result sets
-fastify.get('/api/customers', async (req, reply) => {
-  const { rows } = await pool.query('SELECT customer_id, company_name FROM customers LIMIT 10');
+fastify.get("/api/customers", async (req, reply) => {
+  const { rows } = await pool.query(
+    "SELECT customer_id, company_name FROM customers LIMIT 10"
+  );
   return rows;
 });
-
-// GET /api/customers/take/:count
-// fastify.get('/api/customers/take/:count', async (request, reply) => {
-//   const count = parseInt(request.params.count, 10);
-
-//   if (isNaN(count) || count <= 0 || count > 10000) {
-//     return reply.status(400).send({ error: 'Count must be between 1 and 10,000' });
-//   }
-
-//   try {
-//     const { rows } = await pool.query(
-//       'SELECT customer_id, company_name FROM customers LIMIT $1',
-//       [count]
-//     );
-//     return reply.send(rows);
-//   } catch (err) {
-//     return reply.code(500).send({ error: err.message });
-//   }
-// });
 
 // POST /api/orders
 //
@@ -77,34 +42,14 @@ fastify.get('/api/customers', async (req, reply) => {
 // - Database write performance
 // - Driver-level efficiency (Dapper vs pg)
 // - API responsiveness under frequent inserts
-fastify.post('/api/orders', async (request, reply) => {
+fastify.post("/api/orders", async (request, reply) => {
   const { customer_id, total } = request.body;
 
-  const sql = 'INSERT INTO test_orders (customer_id, total) VALUES ($1, $2)';
+  const sql = "INSERT INTO test_orders (customer_id, total) VALUES ($1, $2)";
   const result = await pool.query(sql, [customer_id, total]);
 
   return { inserted: result.rowCount };
 });
-
-
-// GET /api/orders/with-customer
-//
-// Purpose: Multi-table join and JSON shaping.
-// Measures:
-// - SQL JOIN performance
-// - Data mapping from flat DB result to structured JSON
-// - API server’s ability to shape and serialize joined data
-// fastify.get('/api/orders/with-customer', async (request, reply) => {
-//   const sql = `
-//     SELECT o.id AS order_id, o.customer_id, c.company_name, o.total
-//     FROM test_orders o
-//     JOIN customers c ON o.customer_id = c.customer_id
-//     LIMIT 50
-//   `;
-
-//   const { rows } = await pool.query(sql);
-//   return rows;
-// });
 
 // GET /api/orders/bulk
 //
@@ -113,7 +58,7 @@ fastify.post('/api/orders', async (request, reply) => {
 // - Memory consumption under large payloads
 // - JSON serialization performance
 // - Throughput under high load
-fastify.get('/api/orders/bulk', async (request, reply) => {
+fastify.get("/api/orders/bulk", async (request, reply) => {
   const sql = `
     SELECT id AS order_id, customer_id, order_date, total
     FROM test_orders
@@ -125,35 +70,6 @@ fastify.get('/api/orders/bulk', async (request, reply) => {
   return rows;
 });
 
-// GET /api/stats
-//
-// Purpose: Return simple aggregate stats from the database (total orders, average total).
-// Measures:
-// - SQL aggregate query performance
-// - JSON serialization of scalar values
-// - Low-memory, high-frequency endpoint efficiency
-// fastify.get('/api/stats', async (request, reply) => {
-//   const sql = `
-//     SELECT COUNT(*) AS total_orders,
-//            COALESCE(AVG(total), 0) AS avg_total
-//     FROM test_orders
-//   `;
-
-//   const { rows } = await pool.query(sql);
-//   return rows[0]; // return scalar values as JSON
-// });
-
-// GET /api/simulated-delay
-//
-// Purpose: Simulates an artificial 200ms delay to test the API server's async concurrency handling.
-// Measures:
-// - Ability to scale under non-blocking workloads
-// - Event loop and timer queue performance under high load
-// fastify.get('/api/simulated-delay', async (request, reply) => {
-//   await new Promise(resolve => setTimeout(resolve, 200));
-//   return { message: 'Delayed response', delay: '200ms' };
-// });
-
 // GET /api/file-read
 //
 // Purpose: Streams a local file from disk and returns its contents.
@@ -161,11 +77,10 @@ fastify.get('/api/orders/bulk', async (request, reply) => {
 // - File system access latency
 // - API's performance streaming large files
 // - Memory efficiency for large files
-fastify.get('/api/file-read', async (request, reply) => {
-  const fs = require('fs');
-  const path = require('path');
-  const filePath = '/app/sample-data/large.json'; // ✅ ABSOLUTE path inside container
-
+fastify.get("/api/file-read", async (request, reply) => {
+  const fs = require("fs");
+  const path = require("path");
+  const filePath = "/app/sample-data/large.json"; // ✅ ABSOLUTE path inside container
 
   // Use absolute path from the project root
   // const filePath = path.join(__dirname, '..', 'sample-data', 'large.json');
@@ -173,19 +88,19 @@ fastify.get('/api/file-read', async (request, reply) => {
   try {
     // Check if file exists first
     if (!fs.existsSync(filePath)) {
-      return reply.code(404).send({ error: 'File not found', path: filePath });
+      return reply.code(404).send({ error: "File not found", path: filePath });
     }
 
     // Read file content and send as JSON
-    const fileContent = fs.readFileSync(filePath, 'utf-8');
-    reply.header('Content-Type', 'application/json');
+    const fileContent = fs.readFileSync(filePath, "utf-8");
+    reply.header("Content-Type", "application/json");
     return reply.send({
-      message: 'File read successfully',
+      message: "File read successfully",
       content: JSON.parse(fileContent),
-      size: fileContent.length
+      size: fileContent.length,
     });
   } catch (err) {
-    console.error('File read error:', err);
+    console.error("File read error:", err);
     return reply.code(500).send({ error: err.message, path: filePath });
   }
 });
@@ -197,20 +112,25 @@ fastify.get('/api/file-read', async (request, reply) => {
 // - I/O latency for querying user data from the database
 // - CPU-bound password hash verification using bcrypt
 // - Realistic simulation of login flow for benchmarking authentication endpoints
-fastify.post('/api/login', async (request, reply) => {
+fastify.post("/api/login", async (request, reply) => {
   const { email, password } = request.body;
 
-  const bcrypt = require('bcrypt');
+  const bcrypt = require("bcrypt");
   try {
-    const { rows } = await pool.query('SELECT * FROM users WHERE email = $1', [email]);
+    const { rows } = await pool.query("SELECT * FROM users WHERE email = $1", [
+      email,
+    ]);
     const user = rows[0];
 
     if (!user || !(await bcrypt.compare(password, user.password_hash))) {
-      return reply.code(401).send({ error: 'Invalid credentials' });
+      return reply.code(401).send({ error: "Invalid credentials" });
     }
 
     // Simulate JWT/token creation
-    return reply.send({ message: 'Login successful', token: 'dummy.jwt.token' });
+    return reply.send({
+      message: "Login successful",
+      token: "dummy.jwt.token",
+    });
   } catch (err) {
     return reply.code(500).send({ error: err.message });
   }
@@ -222,36 +142,42 @@ fastify.post('/api/login', async (request, reply) => {
 // Measures:
 // - Parsing performance of multipart/form-data
 // - Memory throughput for uploaded files
-fastify.post('/api/upload', async function (request, reply) {
-  const path = require('path');
-  const fs = require('fs');
-  const { pipeline } = require('stream/promises');
+fastify.post("/api/upload", async function (request, reply) {
+  const path = require("path");
+  const fs = require("fs");
+  const { pipeline } = require("stream/promises");
 
   const parts = request.parts();
 
   for await (const part of parts) {
     if (part.file) {
       // Resolve path relative to node-api folder
-      const uniqueSuffix = `${Date.now()}-${Math.random().toString(36).substring(2, 8)}`;
+      const uniqueSuffix = `${Date.now()}-${Math.random()
+        .toString(36)
+        .substring(2, 8)}`;
       const safeName = `${uniqueSuffix}-${part.filename}`;
       // const tempPath = path.resolve(__dirname, '../node-asp-tmp', safeName);
-      const tempPath = path.resolve('/app/node-asp-tmp', safeName);
+      const tempPath = path.resolve("/app/node-asp-tmp", safeName);
       const writeStream = fs.createWriteStream(tempPath);
 
       await pipeline(part.file, writeStream);
 
       const stats = fs.statSync(tempPath);
-      return reply.send({ message: 'File uploaded and saved', size: stats.size, path: safeName });
+      return reply.send({
+        message: "File uploaded and saved",
+        size: stats.size,
+        path: safeName,
+      });
     }
   }
 
-  reply.code(400).send({ error: 'No file uploaded' });
+  reply.code(400).send({ error: "No file uploaded" });
 });
 
 const start = async () => {
   try {
-    await fastify.listen({ port: 3002, host: '0.0.0.0' });
-    console.log('🚀 Fastify listening on port 3002');
+    await fastify.listen({ port: 3002, host: "0.0.0.0" });
+    console.log("🚀 Fastify listening on port 3002");
   } catch (err) {
     fastify.log.error(err);
     process.exit(1);
