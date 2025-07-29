@@ -64,24 +64,6 @@ app.MapGet("/api/customers", async (NpgsqlDataSource dataSource) =>
     return Results.Json(customers);
 });
 
-// GET /api/customers?take=50
-//
-// Purpose: Returns N customers from the database.
-// Measures:
-// - Query execution time for varying sizes
-// - JSON serialization performance
-// - Memory usage as N grows
-// app.MapGet("/api/customers/take/{count:int}", async (int count, NpgsqlDataSource dataSource) =>
-// {
-//     if (count <= 0 || count > 10000) // Safety guard
-//         return Results.BadRequest("Parameter 'take' must be between 1 and 10,000");
-
-//     await using var conn = await dataSource.OpenConnectionAsync();
-//     var customers = await conn.QueryAsync(@"SELECT customer_id, company_name FROM customers LIMIT @Count", new { Count = count });
-
-//     return Results.Ok(customers);
-// });
-
 // POST /api/orders
 //
 // Purpose: Write-intensive endpoint to insert order records.
@@ -104,26 +86,6 @@ app.MapPost("/api/orders", async (OrderInput input, NpgsqlDataSource dataSource)
     return Results.Ok(new { inserted = result });
 });
 
-// GET /api/orders/with-customer
-//
-// Purpose: Multi-table join and JSON shaping.
-// Measures:
-// - SQL JOIN performance
-// - Data mapping from flat DB result to structured JSON
-// - API server’s ability to shape and serialize joined data
-// app.MapGet("/api/orders/with-customer", async (NpgsqlDataSource dataSource) =>
-// {
-//     await using var conn = await dataSource.OpenConnectionAsync();
-//     var sql = @"
-//         SELECT o.id AS order_id, o.customer_id AS customer_id, c.company_name AS company_name, o.total AS total
-//         FROM test_orders o
-//         JOIN customers c ON o.customer_id = c.customer_id
-//         LIMIT 50";
-
-//     var results = await conn.QueryAsync<OrderWithCustomer>(sql);
-//     return Results.Ok(results);
-// });
-
 // GET /api/orders/bulk
 //
 // Purpose: Simulates a heavy-read scenario by returning 1000+ rows from the database.
@@ -143,37 +105,6 @@ app.MapGet("/api/orders/bulk", async (NpgsqlDataSource dataSource) =>
     var results = await conn.QueryAsync<OrderRecord>(sql);
     return Results.Ok(results);
 });
-
-// GET /api/stats
-//
-// Purpose: Return simple aggregate stats from the database (total orders, average total).
-// Measures:
-// - SQL aggregate query performance
-// - JSON serialization of scalar values
-// - Low-memory, high-frequency endpoint efficiency
-// app.MapGet("/api/stats", async (NpgsqlDataSource dataSource) =>
-// {
-//     await using var conn = await dataSource.OpenConnectionAsync();
-//     var sql = @"
-//         SELECT COUNT(*) AS total_orders, 
-//                COALESCE(AVG(total), 0) AS avg_total
-//         FROM test_orders";
-
-//     var result = await conn.QueryFirstAsync<StatsResult>(sql);
-//     return Results.Ok(result);
-// });
-
-// GET /api/simulated-delay
-//
-// Purpose: Simulates an artificial 200ms delay to test the API server's async concurrency handling.
-// Measures:
-// - Ability to scale under non-blocking workloads
-// - Thread pool and request scheduling efficiency
-// app.MapGet("/api/simulated-delay", async () =>
-// {
-//     await Task.Delay(200);
-//     return Results.Json(new { message = "Delayed response", delay = "200ms" });
-// });
 
 // GET /api/file-read
 //
