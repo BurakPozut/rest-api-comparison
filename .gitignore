@@ -21,9 +21,10 @@ node-api/.env
 node-api/package-lock.json
 
 # Results and scripts
-results/
+# results/
 scripts/*.log
 *.pid
+*.csv
 
 # OS crap
 Thumbs.db
