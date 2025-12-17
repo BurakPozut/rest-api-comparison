@@ -15,6 +15,11 @@ The goal is to evaluate the **raw performance**, **resource usage**, and **respo
 
 ---
 
+## Detailed Report  
+
+A full technical report covering test environments, endpoint design, academic references and detailed benchmark analysis is available here:  
+[Full Technical Repost (PDF)(docs/Rest_Api_Comparison_Report.pdf)]
+
 ## 📁 Project Structure
 
 ```
